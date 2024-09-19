@@ -12,7 +12,7 @@ def get_page_html(page_number):
     response = requests.get(url)
     return BeautifulSoup(response.content, "html.parser")
 
-# Step 1: Scrape all pages of completed UFC events
+# Scrape all pages of completed UFC events
 all_events = []
 page_number = 1
 has_more_pages = True
@@ -36,7 +36,7 @@ while has_more_pages:
 # Convert to DataFrame
 events_df = pd.DataFrame(all_events)
 
-# Step 2: Scrape fights for each event and store them all in one list
+# Scrape fights for each event and store them all in one list
 all_fights = []
 for index, row in events_df.iterrows():
     event_name = row['event_name']
@@ -70,13 +70,11 @@ for index, row in events_df.iterrows():
                 # Append the fight details to the all_fights list
                 all_fights.append(fight_details)
     
-    # Optional: Delay to prevent overwhelming the server (rate-limiting)
+    
     time.sleep(1)  # 1-second delay between event scrapes
 
-# Step 3: Convert the all_fights list into a DataFrame
+Convert the all_fights list into a DataFrame
 all_fights_df = pd.DataFrame(all_fights)
 
-# Step 4: Save the entire dataset to one CSV file
+Save the entire dataset to one CSV file
 all_fights_df.to_csv("ufcfights.csv", index=False)
-
-print("All fight data saved to 'ufcfights.csv'!")
