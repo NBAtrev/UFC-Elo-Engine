@@ -4,3 +4,5 @@ A common question within the mixed martial arts world is who is the greatest fig
 This repository contains all code for the project, as well as the csv files from webscraping, and then the final list of the elo's starting with the highest.
 
 If you want to find your favorite fighter, go to the all_ufc_fighters_elo.csv file and search the name!
+
+YouTube video link: https://www.youtube.com/watch?v=PLwhzlyjEgU
