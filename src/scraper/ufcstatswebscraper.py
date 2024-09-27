@@ -73,8 +73,8 @@ for index, row in events_df.iterrows():
     
     time.sleep(1)  # 1-second delay between event scrapes
 
-Convert the all_fights list into a DataFrame
+# Convert the all_fights list into a DataFrame
 all_fights_df = pd.DataFrame(all_fights)
 
-Save the entire dataset to one CSV file
+# Save the entire dataset to one CSV file
 all_fights_df.to_csv("ufcfights.csv", index=False)

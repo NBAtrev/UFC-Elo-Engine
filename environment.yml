@@ -1,0 +1,18 @@
+name: ufc_engine_elo
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - numpy
+  - matplotlib
+  - pip
+  - beautifulsoup4
+  - seaborn
+  - pandas
+  - requests
+  - ipykernel
+  - plotly=5.24.1
+  - nbformat>=4.2.0
+  - numexpr
+  - bottleneck
