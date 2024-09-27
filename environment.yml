@@ -16,3 +16,4 @@ dependencies:
   - nbformat>=4.2.0
   - numexpr
   - bottleneck
+  - kaleido
