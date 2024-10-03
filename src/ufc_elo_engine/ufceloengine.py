@@ -1,8 +1,9 @@
 import pandas as pd
 import numpy as np
+import os
 
 # Load the CSV
-ufcfights_not_sorted = pd.read_csv("ufcfights_update.csv", index_col=0)
+ufcfights_not_sorted = pd.read_csv("src/data/ufcfights_update.csv", index_col=0)
 ufcfights = ufcfights_not_sorted.reset_index()
 
 # Sort with the most recent at the bottom
@@ -148,10 +149,10 @@ print(fighter_info)
 
 all_fighters = sorted(elo_ratings.items(), key=lambda x: x[1], reverse=True)
 all_fighters_df = pd.DataFrame(all_fighters, columns=['Fighter', 'Elo Rating'])
-all_fighters_df.to_csv('k_factor_adjust_current.csv', index=False)
+all_fighters_df.to_csv('src/data/k_factor_adjust_current.csv', index=False)
 
 peak_elo = sorted(peak_elo_ratings.items(), key = lambda x: x[1], reverse = True)
 peak_elo_df = pd.DataFrame(peak_elo, columns=['Fighter', 'Peak Elo'])
-peak_elo_df.to_csv('peak_elo.csv', index=False)
+peak_elo_df.to_csv('src/data/peak_elo.csv', index=False)
 
 
