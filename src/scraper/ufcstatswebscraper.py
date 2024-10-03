@@ -77,4 +77,4 @@ for index, row in events_df.iterrows():
 all_fights_df = pd.DataFrame(all_fights)
 
 # Save the entire dataset to one CSV file
-all_fights_df.to_csv("ufcfights.csv", index=False)
+all_fights_df.to_csv("../data/ufcfights.csv", index=False)

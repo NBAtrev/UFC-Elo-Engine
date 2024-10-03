@@ -1,4 +1,4 @@
-name: ufc_engine_elo
+name: ufc_elo_engine
 channels:
   - defaults
   - conda-forge
