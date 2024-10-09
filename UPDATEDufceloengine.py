@@ -34,7 +34,7 @@ peak_elo_ratings = {}
 
 # Function to calculate the expected score
 def expected_score(elo_a, elo_b):
-    return 1 / (1 + 10**((elo_b - elo_a) / 400))
+    return 1/(1+10**((elo_b - elo_a) / 400))
 
 # Function to update Elo ratings
 def update_elo(winner_elo, loser_elo, k_factor):
