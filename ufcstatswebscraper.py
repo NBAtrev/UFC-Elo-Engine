@@ -22,16 +22,19 @@ while has_more_pages:
     
     # Extract event details from the current page
     event_list = soup.find_all("a", class_="b-link b-link_style_black")
+    event_dates = soup.find_all("span", class_="b-statistics__date")
+
     if not event_list:
         has_more_pages = False  # Exit if no more events are found on the page
     else:
-        for event in event_list:
+        for event, date in zip(event_list, event_dates):
             event_name = event.text.strip()
             event_url = event['href']
-            all_events.append({"event_name": event_name, "event_url": event_url})
-        
-        page_number += 1  # Move to the next page
-        time.sleep(1)  # Delay to avoid overloading the server
+            event_date = date.text.strip()
+            all_events.append({"event_name": event_name, "event_url": event_url, "event_date": event_date})
+
+        page_number += 1
+        time.sleep(1)
 
 # Convert to DataFrame
 events_df = pd.DataFrame(all_events)
@@ -41,6 +44,7 @@ all_fights = []
 for index, row in events_df.iterrows():
     event_name = row['event_name']
     event_url = row['event_url']
+    event_date = row['event_date']
     
     # Request the event page
     event_response = requests.get(event_url)
@@ -59,6 +63,7 @@ for index, row in events_df.iterrows():
                 # Collect fight details
                 fight_details = {
                     "event": event_name,
+                    "event_date": event_date,
                     "fighter_1": fight_data[1].find_all("p")[0].text.strip(),  # First fighter name
                     "fighter_2": fight_data[1].find_all("p")[1].text.strip(),  # Second fighter name
                     "result": fight_data[0].text.strip(),  # Win/Loss
@@ -73,8 +78,8 @@ for index, row in events_df.iterrows():
     
     time.sleep(1)  # 1-second delay between event scrapes
 
-Convert the all_fights list into a DataFrame
+# Convert the all_fights list into a DataFrame
 all_fights_df = pd.DataFrame(all_fights)
 
-Save the entire dataset to one CSV file
+# Save the entire dataset to one CSV file
 all_fights_df.to_csv("ufcfights.csv", index=False)
