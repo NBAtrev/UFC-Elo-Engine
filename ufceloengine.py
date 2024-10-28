@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 # Load the CSV
-ufcfights_not_sorted = pd.read_csv("ufcfights_update.csv", index_col=0)
+ufcfights_not_sorted = pd.read_csv("ufcfights10_26_24.csv", index_col=0)
 ufcfights = ufcfights_not_sorted.reset_index()
 
 # Sort with the most recent at the bottom
@@ -12,7 +12,7 @@ ufcfights = ufcfights.sort_index(ascending=False)
 unique_events = ufcfights[['event']].drop_duplicates().reset_index(drop=True)
 unique_events['event_id'] = range(1, len(unique_events) + 1)
 ufcfights = ufcfights.merge(unique_events, on='event')
-
+ufcfights['result'] = ufcfights['result'].str.lower()
 # Drop unnecessary columns
 ufcfights.drop(columns=["method", "round", "time"], inplace=True)
 
@@ -20,7 +20,7 @@ ufcfights.drop(columns=["method", "round", "time"], inplace=True)
 initial_elo = 1000
 elo_ratings = {}
 k_factor = 40
-
+peak_elo_ratings = {}
 # Function to calculate the expected score
 def expected_score(elo_a, elo_b):
     return 1 / (1 + 10**((elo_b - elo_a) / 400))
@@ -67,6 +67,11 @@ for index, row in ufcfights.iterrows():
         new_fighter1_elo, new_fighter2_elo = update_elo(fighter_1_elo_start, fighter_2_elo_start, k_factor / 2)
     else:  # No contest
         new_fighter1_elo, new_fighter2_elo = fighter_1_elo_start, fighter_2_elo_start
+    
+    if fighter_1 not in peak_elo_ratings or new_fighter1_elo > peak_elo_ratings[fighter_1]:
+        peak_elo_ratings[fighter_1] = new_fighter1_elo
+    if fighter_2 not in peak_elo_ratings or new_fighter2_elo > peak_elo_ratings[fighter_2]:
+        peak_elo_ratings[fighter_2] = new_fighter2_elo
 
     # Record updated Elo ratings
     ufcfights.at[index, 'fighter_1_elo_end'] = new_fighter1_elo
@@ -96,7 +101,9 @@ def get_fighter_info(fighter_name, elo_ratings, ufcfights, initial_elo=1000):
         return f"{fighter_name} has no recorded matches."
     
 # Export to CSV
+'''
 ufcfights.to_csv('ufcfights_with_elo.csv', index=False)
+'''
 '''
 # Find the fighter with the highest Elo
 highest_elo_fighter = max(elo_ratings, key=elo_ratings.get)
@@ -108,15 +115,23 @@ lowest_elo_fighter = min(elo_ratings, key= elo_ratings.get)
 lowest_elo_value = elo_ratings[lowest_elo_fighter]
 print(f"The fighter with the highest Elo is {lowest_elo_fighter} with an Elo of {lowest_elo_value}")
 '''
+
+'''
 top_50_fighters = sorted(elo_ratings.items(), key=lambda x: x[1], reverse=True)[:50]
 top_50_df = pd.DataFrame(top_50_fighters, columns=['Fighter', 'Elo Rating'])
 top_50_df.to_csv('top_50_fighters_elo.csv', index=False)
+'''
+
 
 all_fighters = sorted(elo_ratings.items(), key=lambda x: x[1], reverse=True)
 all_fighters_df = pd.DataFrame(all_fighters, columns=['Fighter', 'Elo Rating'])
-all_fighters_df.to_csv('all_fighters_elo.csv', index=False)
+all_fighters_df.to_csv('current_fighters_elo.csv', index=False)
+
+
+
+
 '''
-fighter_name = "Conor McGregor"
-fighter_info = get_fighter_info(fighter_name, elo_ratings, ufcfights)
-print(fighter_info)
+peak_elo = sorted(peak_elo_ratings.items(), key = lambda x: x[1], reverse = True)
+peak_elo_df = pd.DataFrame(peak_elo, columns=['Fighter', 'Peak Elo'])
+peak_elo_df.to_csv('fighter_peak_elo.csv', index=False)
 '''
