@@ -2,25 +2,21 @@ import pandas as pd
 import numpy as np
 
 # Load the CSV
-ufcfights_not_sorted = pd.read_csv("ufcfights_update.csv", index_col=0)
+ufcfights_not_sorted = pd.read_csv("ogtime.csv", index_col=0)
 ufcfights = ufcfights_not_sorted.reset_index()
 
 # Sort with the most recent at the bottom
 ufcfights = ufcfights.sort_index(ascending=False)
 
-# Create unique event IDs
 unique_events = ufcfights[['event']].drop_duplicates().reset_index(drop=True)
-
 unique_events['event_id'] = range(1, len(unique_events) + 1)
 ufcfights = ufcfights.merge(unique_events, on='event')
-
-#clean up KO and Subs
 ufcfights['method'] = ufcfights['method'].apply(lambda x: 'KO' if 'KO' in x else ('SUB' if 'SUB' in x else x))
+ufcfights['result'] = ufcfights['result'].apply(lambda x: 'nc' if 'nc' in x else ('draw' if 'draw' in x else x))
 # Drop unnecessary columns
-ufcfights.drop(columns=["round", "time"], inplace=True)
-
+ufcfights.drop(columns=["weight","round", "time","date"], inplace=True)
 #NEW - elo update for method
-def get_k_factor(method, base_k=40):
+def get_k_factor(method, base_k=200):
     if method == 'KO' or method == 'SUB':
         return base_k * 1.15  # Increase K by 15% for KO or submission
     else:
@@ -29,18 +25,24 @@ def get_k_factor(method, base_k=40):
 # Initialize Elo ratings
 initial_elo = 1000
 elo_ratings = {}
-base_k_factor = 40
+base_k_factor = 200
 peak_elo_ratings = {}
 
 # Function to calculate the expected score
 def expected_score(elo_a, elo_b):
-    return 1/(1+10**((elo_b - elo_a) / 400))
+    return 1 / (1 + 10**((elo_b - elo_a) / 400))
 
 # Function to update Elo ratings
-def update_elo(winner_elo, loser_elo, k_factor):
+def update_elo(winner_elo, loser_elo, k_factor, result="win"):
     expected_win = expected_score(winner_elo, loser_elo)
-    new_winner_elo = winner_elo + k_factor * (1 - expected_win)
-    new_loser_elo = loser_elo + k_factor * (0 - (1 - expected_win))
+    if result == "win":  # Winner-loser case
+        new_winner_elo = winner_elo + k_factor * (1 - expected_win)
+        new_loser_elo = loser_elo + k_factor * (0 - (1 - expected_win))
+    elif result == "draw":  # Draw case
+        new_winner_elo = winner_elo + k_factor * (0.5 - expected_win)
+        new_loser_elo = loser_elo + k_factor * (0.5 - (1 - expected_win))
+    else:  # No contest, no Elo change
+        new_winner_elo, new_loser_elo = winner_elo, loser_elo
     return round(new_winner_elo, 2), round(new_loser_elo, 2)
 
 # Create unique match IDs
@@ -81,7 +83,7 @@ for index, row in ufcfights.iterrows():
     if row['result'] == 'win':  # Fighter 1 wins
         new_fighter1_elo, new_fighter2_elo = update_elo(fighter_1_elo_start, fighter_2_elo_start, current_k)
     elif row["result"] == 'draw':  # Draw
-        new_fighter1_elo, new_fighter2_elo = update_elo(fighter_1_elo_start, fighter_2_elo_start, current_k / 2)
+        new_fighter1_elo, new_fighter2_elo = update_elo(fighter_1_elo_start, fighter_2_elo_start, current_k,result="draw")
     else:  # No contest
         new_fighter1_elo, new_fighter2_elo = fighter_1_elo_start, fighter_2_elo_start
     
@@ -116,42 +118,27 @@ def get_fighter_info(fighter_name, elo_ratings, ufcfights, initial_elo=1000):
         return fighter_matches[['event', 'fighter_1', 'fighter_2', 'result', 'fighter_1_elo_start', 'fighter_2_elo_start','fighter_1_elo_end','fighter_2_elo_end']]
     else:
         return f"{fighter_name} has no recorded matches."
-
-#finds peak elo ratings
-'''
-
-'''
 # Export to CSV
-'''
-ufcfights.to_csv('ufcfights_with_elo.csv', index=False)
-'''
-'''
-# Find the fighter with the highest Elo
-highest_elo_fighter = max(elo_ratings, key=elo_ratings.get)
-highest_elo_value = elo_ratings[highest_elo_fighter]
-print(f"The fighter with the highest Elo is {highest_elo_fighter} with an Elo of {highest_elo_value}.")
 
-#find the fghter with the lowest elo
-lowest_elo_fighter = min(elo_ratings, key= elo_ratings.get)
-lowest_elo_value = elo_ratings[lowest_elo_fighter]
-print(f"The fighter with the highest Elo is {lowest_elo_fighter} with an Elo of {lowest_elo_value}")
+'''
+all_fighters = sorted(elo_ratings.items(), key=lambda x: x[1], reverse=True)
+all_fighters_df = pd.DataFrame(all_fighters, columns=['Fighter', 'Elo Rating'])
+#all_fighters_df.to_csv('k_factor_adjust_current.csv', index=False)
+all_fighters_df.to_csv('ogcurrent.csv', index=False)
+'''
 
-top_50_fighters = sorted(elo_ratings.items(), key=lambda x: x[1], reverse=True)[:50]
-top_50_df = pd.DataFrame(top_50_fighters, columns=['Fighter', 'Elo Rating'])
-top_50_df.to_csv('top_50_fighters_elo.csv', index=False)
+'''
+peak_elo = sorted(peak_elo_ratings.items(), key = lambda x: x[1], reverse = True)
+peak_elo_df = pd.DataFrame(peak_elo, columns=['Fighter', 'Peak Elo'])
+peak_elo_df.to_csv('k_adjust_fighter_peak_elo.csv', index=False)
+'''
 
-fighter_name = "Anderson Silva"
+k_peak_elo = sorted(peak_elo_ratings.items(), key = lambda x: x[1], reverse = True)
+K_peak_elo_df = pd.DataFrame(k_peak_elo, columns=['Fighter', 'Peak Elo'])
+K_peak_elo_df.to_csv('og_k200_peak_elo.csv', index=False)
+
+'''
+fighter_name = "Conor McGregor"
 fighter_info = get_fighter_info(fighter_name, elo_ratings, ufcfights)
 print(fighter_info)
 '''
-
-
-all_fighters = sorted(elo_ratings.items(), key=lambda x: x[1], reverse=True)
-all_fighters_df = pd.DataFrame(all_fighters, columns=['Fighter', 'Elo Rating'])
-all_fighters_df.to_csv('k_factor_adjust_current.csv', index=False)
-
-peak_elo = sorted(peak_elo_ratings.items(), key = lambda x: x[1], reverse = True)
-peak_elo_df = pd.DataFrame(peak_elo, columns=['Fighter', 'Peak Elo'])
-peak_elo_df.to_csv('peak_elo.csv', index=False)
-
-
