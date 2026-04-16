@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 # Load the CSV
-ufcfights_not_sorted = pd.read_csv("ogtime.csv", index_col=0)
+ufcfights_not_sorted = pd.read_csv("4_12_26.csv", index_col=0)
 ufcfights = ufcfights_not_sorted.reset_index()
 
 # Sort with the most recent at the bottom
@@ -16,7 +16,7 @@ ufcfights['result'] = ufcfights['result'].apply(lambda x: 'nc' if 'nc' in x else
 # Drop unnecessary columns
 ufcfights.drop(columns=["weight","round", "time","date"], inplace=True)
 #NEW - elo update for method
-def get_k_factor(method, base_k=200):
+def get_k_factor(method, base_k=40):
     if method == 'KO' or method == 'SUB':
         return base_k * 1.15  # Increase K by 15% for KO or submission
     else:
@@ -25,7 +25,7 @@ def get_k_factor(method, base_k=200):
 # Initialize Elo ratings
 initial_elo = 1000
 elo_ratings = {}
-base_k_factor = 200
+base_k_factor = 40
 peak_elo_ratings = {}
 
 # Function to calculate the expected score
@@ -120,23 +120,23 @@ def get_fighter_info(fighter_name, elo_ratings, ufcfights, initial_elo=1000):
         return f"{fighter_name} has no recorded matches."
 # Export to CSV
 
-'''
+
 all_fighters = sorted(elo_ratings.items(), key=lambda x: x[1], reverse=True)
 all_fighters_df = pd.DataFrame(all_fighters, columns=['Fighter', 'Elo Rating'])
-#all_fighters_df.to_csv('k_factor_adjust_current.csv', index=False)
-all_fighters_df.to_csv('ogcurrent.csv', index=False)
-'''
+all_fighters_df.to_csv('k_factor_adjust_current.csv', index=False)
+#all_fighters_df.to_csv('ogcurrent.csv', index=False)
 
-'''
+
+
 peak_elo = sorted(peak_elo_ratings.items(), key = lambda x: x[1], reverse = True)
 peak_elo_df = pd.DataFrame(peak_elo, columns=['Fighter', 'Peak Elo'])
 peak_elo_df.to_csv('k_adjust_fighter_peak_elo.csv', index=False)
-'''
 
+'''
 k_peak_elo = sorted(peak_elo_ratings.items(), key = lambda x: x[1], reverse = True)
 K_peak_elo_df = pd.DataFrame(k_peak_elo, columns=['Fighter', 'Peak Elo'])
 K_peak_elo_df.to_csv('og_k200_peak_elo.csv', index=False)
-
+'''
 '''
 fighter_name = "Conor McGregor"
 fighter_info = get_fighter_info(fighter_name, elo_ratings, ufcfights)
