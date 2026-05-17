@@ -41,6 +41,7 @@ all_fights = []
 for index, row in events_df.iterrows():
     event_name = row['event_name']
     event_url = row['event_url']
+    print(event_name)
     
     # Request the event page
     event_response = requests.get(event_url)
@@ -67,14 +68,14 @@ for index, row in events_df.iterrows():
                     "time": fight_data[9].text.strip()  # Time of fight
                 }
                 
-                # Append the fight details to the all_fights list
+                
                 all_fights.append(fight_details)
     
     
-    time.sleep(1)  # 1-second delay between event scrapes
+    time.sleep(1)  
 
 #Convert the all_fights list into a DataFrame
 all_fights_df = pd.DataFrame(all_fights)
 
 #Save the entire dataset to one CSV file
-all_fights_df.to_csv("ufcfights.csv", index=False)
+all_fights_df.to_csv("5_17_data.csv", index=False)

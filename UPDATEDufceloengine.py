@@ -2,10 +2,9 @@ import pandas as pd
 import numpy as np
 
 # Load the CSV
-ufcfights_not_sorted = pd.read_csv("4_12_26.csv", index_col=0)
+ufcfights_not_sorted = pd.read_csv("5_17_data.csv", index_col=0)
 ufcfights = ufcfights_not_sorted.reset_index()
 
-# Sort with the most recent at the bottom
 ufcfights = ufcfights.sort_index(ascending=False)
 
 unique_events = ufcfights[['event']].drop_duplicates().reset_index(drop=True)
@@ -14,7 +13,8 @@ ufcfights = ufcfights.merge(unique_events, on='event')
 ufcfights['method'] = ufcfights['method'].apply(lambda x: 'KO' if 'KO' in x else ('SUB' if 'SUB' in x else x))
 ufcfights['result'] = ufcfights['result'].apply(lambda x: 'nc' if 'nc' in x else ('draw' if 'draw' in x else x))
 # Drop unnecessary columns
-ufcfights.drop(columns=["weight","round", "time","date"], inplace=True)
+ufcfights.drop(columns=[ "round", "time"], inplace=True)
+
 #NEW - elo update for method
 def get_k_factor(method, base_k=40):
     if method == 'KO' or method == 'SUB':
@@ -45,16 +45,16 @@ def update_elo(winner_elo, loser_elo, k_factor, result="win"):
         new_winner_elo, new_loser_elo = winner_elo, loser_elo
     return round(new_winner_elo, 2), round(new_loser_elo, 2)
 
-# Create unique match IDs
+#unique match IDs
 ufcfights['cc_match'] = np.arange(1, len(ufcfights) + 1)
 
 # Add columns for Elo ratings
-ufcfights['fighter_1_elo_start'] = 0
-ufcfights['fighter_2_elo_start'] = 0
-ufcfights['fighter_1_elo_end'] = 0
-ufcfights['fighter_2_elo_end'] = 0
+ufcfights['fighter_1_elo_start'] = 0.0
+ufcfights['fighter_2_elo_start'] = 0.0
+ufcfights['fighter_1_elo_end'] = 0.0
+ufcfights['fighter_2_elo_end'] = 0.0
 
-# Calculate Elo ratings for each match
+#Calculate Elo ratings for each match
 for index, row in ufcfights.iterrows():
     fighter_1 = row['fighter_1']
     fighter_2 = row['fighter_2']
