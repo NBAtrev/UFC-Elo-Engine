@@ -16,8 +16,8 @@ from selenium.webdriver.support import expected_conditions as EC
 BASE_URL = "http://ufcstats.com/statistics/events/completed?page="
 OUTPUT_FILE = "ufc_fights.csv"
 
-MAX_PAGES = 1      # keep this at 1 while testing
-MAX_EVENTS = 3     # keep this small while testing
+MAX_PAGES = None     # keep this at 1 while testing
+MAX_EVENTS = None     # keep this small while testing
 
 SLEEP_TIME = 1
 
