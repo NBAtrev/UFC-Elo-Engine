@@ -1,81 +1,271 @@
-import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import time
 
-# Base URL for UFC events
-base_url = "http://ufcstats.com/statistics/events/completed?page="
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
-# Function to get the HTML of a given page number
-def get_page_html(page_number):
-    url = base_url + str(page_number)
-    response = requests.get(url)
-    return BeautifulSoup(response.content, "html.parser")
 
-# Scrape all pages of completed UFC events
-all_events = []
-page_number = 1
-has_more_pages = True
+# -------------------------
+# SETTINGS
+# -------------------------
 
-while has_more_pages:
-    soup = get_page_html(page_number)
-    
-    # Extract event details from the current page
-    event_list = soup.find_all("a", class_="b-link b-link_style_black")
-    if not event_list:
-        has_more_pages = False  # Exit if no more events are found on the page
-    else:
-        for event in event_list:
-            event_name = event.text.strip()
-            event_url = event['href']
-            all_events.append({"event_name": event_name, "event_url": event_url})
-        
-        page_number += 1  # Move to the next page
-        time.sleep(1)  # Delay to avoid overloading the server
+BASE_URL = "http://ufcstats.com/statistics/events/completed?page="
+OUTPUT_FILE = "ufc_fights.csv"
 
-# Convert to DataFrame
-events_df = pd.DataFrame(all_events)
+MAX_PAGES = 1      # keep this at 1 while testing
+MAX_EVENTS = 3     # keep this small while testing
 
-# Scrape fights for each event and store them all in one list
-all_fights = []
-for index, row in events_df.iterrows():
-    event_name = row['event_name']
-    event_url = row['event_url']
-    print(event_name)
-    
-    # Request the event page
-    event_response = requests.get(event_url)
-    event_soup = BeautifulSoup(event_response.content, "html.parser")
-    
-    # Scrape fight details (fight table)
-    fight_table = event_soup.find("tbody")
-    
-    # Some pages might not have fights listed, so we check first
-    if fight_table:
-        for fight_row in fight_table.find_all("tr"):
-            fight_data = fight_row.find_all("td")
-            
-            # Ensure the correct number of columns are present (should be 7 for each fight)
-            if len(fight_data) >= 7:
-                # Collect fight details
-                fight_details = {
-                    "event": event_name,
-                    "fighter_1": fight_data[1].find_all("p")[0].text.strip(),  # First fighter name
-                    "fighter_2": fight_data[1].find_all("p")[1].text.strip(),  # Second fighter name
-                    "result": fight_data[0].text.strip(),  # Win/Loss
-                    "method": fight_data[7].text.strip(),  # Method of victory
-                    "round": fight_data[8].text.strip(),  # Round number
-                    "time": fight_data[9].text.strip()  # Time of fight
-                }
-                
-                
-                all_fights.append(fight_details)
-    
-    
-    time.sleep(1)  
+SLEEP_TIME = 1
 
-#Convert the all_fights list into a DataFrame
-all_fights_df = pd.DataFrame(all_fights)
 
-#Save the entire dataset to one CSV file
-all_fights_df.to_csv("5_17_data.csv", index=False)
+# -------------------------
+# BROWSER SETUP
+# -------------------------
+
+def start_browser():
+    options = Options()
+
+    options.add_argument("--headless=new")
+
+    options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1400,1200")
+
+    driver = webdriver.Chrome(options=options)
+
+    return driver
+
+
+def get_soup(driver, url, wait_for_class):
+    print("Loading:", url)
+
+    driver.get(url)
+
+    wait = WebDriverWait(driver, 30)
+
+    wait.until(
+        EC.presence_of_element_located((By.CLASS_NAME, wait_for_class))
+    )
+
+    html = driver.page_source
+
+    print("HTML length:", len(html))
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    return soup
+
+
+# -------------------------
+# GET EVENT LINKS
+# -------------------------
+
+def get_events_from_page(driver, page_number):
+    url = BASE_URL + str(page_number)
+
+    soup = get_soup(
+        driver,
+        url,
+        "b-statistics__table-events"
+    )
+
+    events = []
+
+    event_table = soup.find("table", class_="b-statistics__table-events")
+
+    if event_table is None:
+        print("Could not find event table.")
+        return events
+
+    rows = event_table.find_all("tr", class_="b-statistics__table-row")
+
+    for row in rows:
+        link = row.find("a", class_="b-link b-link_style_black")
+
+        if link is None:
+            continue
+
+        event_name = link.text.strip()
+        event_url = link.get("href")
+
+        if event_name == "":
+            continue
+
+        if event_url is None:
+            continue
+
+        events.append({
+            "event_name": event_name,
+            "event_url": event_url
+        })
+
+    return events
+
+
+def get_all_events(driver):
+    all_events = []
+
+    page_number = 1
+
+    while True:
+        if MAX_PAGES is not None and page_number > MAX_PAGES:
+            break
+
+        print()
+        print("Scraping events page:", page_number)
+
+        events = get_events_from_page(driver, page_number)
+
+        print("Events found:", len(events))
+
+        if len(events) == 0:
+            break
+
+        for event in events:
+            all_events.append(event)
+
+        page_number += 1
+
+        time.sleep(SLEEP_TIME)
+
+    return all_events
+
+
+def get_fighter_names(fight_data):
+    fighters = []
+
+    if len(fight_data) < 2:
+        return fighters
+
+    name_cell = fight_data[1]
+
+    name_tags = name_cell.find_all("p")
+
+    for tag in name_tags:
+        name = tag.text.strip()
+
+        if name != "":
+            fighters.append(name)
+
+    return fighters
+
+
+def scrape_event_fights(driver, event):
+    event_name = event["event_name"]
+    event_url = event["event_url"]
+
+    print()
+    print("Scraping event:", event_name)
+
+    soup = get_soup(
+        driver,
+        event_url,
+        "b-fight-details__table-body"
+    )
+
+    fight_table_body = soup.find("tbody", class_="b-fight-details__table-body")
+
+    if fight_table_body is None:
+        print("Could not find fight table body.")
+        return []
+
+    fight_rows = fight_table_body.find_all("tr", class_="b-fight-details__table-row")
+
+    print("Fight rows found:", len(fight_rows))
+
+    fights = []
+
+    for fight_row in fight_rows:
+        fight_data = fight_row.find_all("td")
+
+        if len(fight_data) == 0:
+            continue
+
+        fighters = get_fighter_names(fight_data)
+
+        if len(fighters) < 2:
+            continue
+
+        result = ""
+        method = ""
+        round_number = ""
+        fight_time = ""
+
+        if len(fight_data) > 0:
+            result = fight_data[0].text.strip()
+
+        if len(fight_data) > 7:
+            method = fight_data[7].text.strip()
+
+        if len(fight_data) > 8:
+            round_number = fight_data[8].text.strip()
+
+        if len(fight_data) > 9:
+            fight_time = fight_data[9].text.strip()
+
+
+        fight_details = {
+            "event": event_name,
+            "fighter_1": fighters[0],
+            "fighter_2": fighters[1],
+            "result": result,
+            "method": method,
+            "round": round_number,
+            "time": fight_time
+        }
+
+        fights.append(fight_details)
+
+    print("Fights scraped:", len(fights))
+
+    return fights
+
+
+# -------------------------
+# MAIN PROGRAM
+# -------------------------
+
+def main():
+    driver = start_browser()
+
+    try:
+        all_events = get_all_events(driver)
+
+        print()
+        print("Total events collected:", len(all_events))
+
+        if MAX_EVENTS is not None:
+            all_events = all_events[:MAX_EVENTS]
+
+        all_fights = []
+
+        for event in all_events:
+            fights = scrape_event_fights(driver, event)
+
+            for fight in fights:
+                all_fights.append(fight)
+
+            time.sleep(SLEEP_TIME)
+
+        df = pd.DataFrame(all_fights)
+
+        df.to_csv(OUTPUT_FILE, index=False)
+
+        print()
+        print("Done.")
+        print("Total fights saved:", len(df))
+        print("Output file:", OUTPUT_FILE)
+
+        if len(df) > 0:
+            print()
+            print(df.head())
+
+    finally:
+        driver.quit()
+
+
+if __name__ == "__main__":
+    main()

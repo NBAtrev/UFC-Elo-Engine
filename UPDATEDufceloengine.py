@@ -2,8 +2,7 @@ import pandas as pd
 import numpy as np
 
 # Load the CSV
-ufcfights_not_sorted = pd.read_csv("5_17_data.csv", index_col=0)
-ufcfights = ufcfights_not_sorted.reset_index()
+ufcfights = pd.read_csv("ufc_fights.csv")
 
 ufcfights = ufcfights.sort_index(ascending=False)
 
