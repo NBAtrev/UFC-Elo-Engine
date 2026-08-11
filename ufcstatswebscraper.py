@@ -189,6 +189,11 @@ def scrape_event_fights(driver, event):
         if len(fighters) < 2:
             continue
 
+        fight_url = fight_row.get("data-link")
+
+        if fight_url is None:
+            fight_url = ""
+
         result = ""
         method = ""
         round_number = ""
@@ -209,6 +214,7 @@ def scrape_event_fights(driver, event):
 
         fight_details = {
             "event": event_name,
+            "fight_url": fight_url,
             "fighter_1": fighters[0],
             "fighter_2": fighters[1],
             "result": result,
