@@ -1,0 +1,14 @@
+# UFC Elo Engine - project dependencies
+# Install:  python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+
+# --- Web scraper (ufcstatswebscraper.py) ---
+selenium>=4.20          # Selenium Manager auto-downloads the matching chromedriver; Google Chrome must be installed
+beautifulsoup4>=4.12
+pandas>=2.2
+
+# --- Elo engine scripts + notebook (ufceloengine.py, Basic UFC analysis.ipynb) ---
+numpy>=1.26
+matplotlib>=3.8
+
+# --- Lets the notebook run against this venv (select ".venv" as the kernel) ---
+ipykernel>=6.29
